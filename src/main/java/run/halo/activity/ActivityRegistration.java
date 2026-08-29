@@ -2,6 +2,7 @@ package run.halo.activity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.halo.app.extension.AbstractExtension;
@@ -66,5 +67,10 @@ public class ActivityRegistration extends AbstractExtension {
          * 签到时间。
          */
         private Instant checkedInAt;
+
+        /**
+         * 报名自定义字段值（键 = 字段 name，值 = 填写内容）。
+         */
+        private Map<String, String> customFields;
     }
 }

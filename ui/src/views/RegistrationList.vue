@@ -129,7 +129,16 @@ onMounted(() => {
                 <VEntityField :title="reg.spec?.name">
                   <template #description>
                     <span class="mr-2">📱 {{ reg.spec?.phone }}</span>
-                    <span v-if="reg.spec?.remark">备注：{{ reg.spec.remark }}</span>
+                    <span v-if="reg.spec?.remark" class="mr-2">备注：{{ reg.spec.remark }}</span>
+                    <template v-if="reg.spec?.customFields && activity?.spec?.formFields">
+                      <span
+                        v-for="ff in activity.spec.formFields"
+                        :key="ff.name"
+                        class="mr-2"
+                      >
+                        {{ ff.label }}：{{ reg.spec.customFields[ff.name] || '-' }}
+                      </span>
+                    </template>
                   </template>
                 </VEntityField>
               </template>

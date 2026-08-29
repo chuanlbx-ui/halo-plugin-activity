@@ -2,6 +2,7 @@ package run.halo.activity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.halo.app.extension.AbstractExtension;
@@ -66,5 +67,47 @@ public class Activity extends AbstractExtension {
          * 富文本活动内容（HTML）。
          */
         private String content;
+
+        /**
+         * 报名表单自定义字段配置（可选）。
+         * 默认内置字段：姓名、手机号；额外字段通过此配置动态添加。
+         */
+        private List<FormField> formFields;
+
+        @Data
+        public static class FormField {
+
+            /**
+             * 字段唯一标识（英文，如 company）。
+             */
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+            private String name;
+
+            /**
+             * 字段显示标签（如 公司名称）。
+             */
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+            private String label;
+
+            /**
+             * 字段类型：text / textarea / select / number。
+             */
+            private String type;
+
+            /**
+             * 是否必填。
+             */
+            private Boolean required;
+
+            /**
+             * select 类型的选项（逗号分隔）。
+             */
+            private String options;
+
+            /**
+             * 占位提示。
+             */
+            private String placeholder;
+        }
     }
 }

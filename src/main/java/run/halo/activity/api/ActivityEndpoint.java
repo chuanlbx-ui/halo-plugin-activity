@@ -221,6 +221,19 @@ public class ActivityEndpoint implements CustomEndpoint {
                     && Instant.now().isAfter(spec.getRegistrationDeadline())) {
                     return Mono.error(new ActivityException("报名已截止"));
                 }
+                // 校验自定义字段
+                var formFields = spec.getFormFields();
+                if (formFields != null) {
+                    for (var field : formFields) {
+                        boolean required = Boolean.TRUE.equals(field.getRequired());
+                        String value = req.customFields() == null
+                            ? null : req.customFields().get(field.getName());
+                        if (required && (value == null || value.isBlank())) {
+                            return Mono.error(new ActivityException(
+                                "请填写「" + field.getLabel() + "」"));
+                        }
+                    }
+                }
                 return listRegistrationsOf(activityName)
                     .flatMap(registrations -> {
                         boolean duplicated = registrations.stream()
@@ -257,6 +270,7 @@ public class ActivityEndpoint implements CustomEndpoint {
         spec.setRemark(req.remark());
         spec.setRegistrationTime(Instant.now());
         spec.setStatus("APPROVED");
+        spec.setCustomFields(req.customFields());
         registration.setSpec(spec);
         return client.create(registration);
     }
