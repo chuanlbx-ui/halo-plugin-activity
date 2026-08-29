@@ -13,7 +13,7 @@ metadata:
       ["plugin:activity:view"]
 rules:
   - apiGroups: ["api.activity.halo.run"]
-    resources: ["activities", "registrations", "activities/registration"]
+    resources: ["activities", "registrations", "activities/registration", "activities/checkin"]
     verbs: ["get", "list", "create"]
 ---
 # 角色模板：活动管理（可在控制台分配给其他用户）

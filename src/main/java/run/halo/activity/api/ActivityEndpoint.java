@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 import run.halo.activity.Activity;
 import run.halo.activity.ActivityException;
 import run.halo.activity.ActivityRegistration;
+import run.halo.activity.CheckinRequest;
 import run.halo.activity.RegistrationRequest;
 import run.halo.app.extension.Extension;
 import run.halo.app.extension.GroupVersion;
@@ -105,6 +106,25 @@ public class ActivityEndpoint implements CustomEndpoint {
                 .response(responseBuilder()
                     .implementation(ActivityRegistration.class))
             )
+            .POST("activities/{name}/checkin", this::checkin, builder -> builder
+                .operationId("CheckinActivity")
+                .description("Check in with phone number.")
+                .tag(tag)
+                .parameter(parameterBuilder()
+                    .name("name")
+                    .in(ParameterIn.PATH)
+                    .description("Activity name.")
+                    .required(true)
+                    .implementation(String.class))
+                .requestBody(requestBodyBuilder()
+                    .required(true)
+                    .content(contentBuilder()
+                        .mediaType(MediaType.APPLICATION_JSON_VALUE)
+                        .schema(schemaBuilder()
+                            .implementation(CheckinRequest.class))))
+                .response(responseBuilder()
+                    .implementation(ActivityRegistration.class))
+            )
             .build();
     }
 
@@ -143,6 +163,40 @@ public class ActivityEndpoint implements CustomEndpoint {
             .flatMap(registration -> ServerResponse.ok().bodyValue(registration))
             .onErrorResume(ActivityException.class,
                 e -> badRequest(e.getMessage()));
+    }
+
+    private Mono<ServerResponse> checkin(ServerRequest request) {
+        String activityName = request.pathVariable("name");
+        return request.bodyToMono(CheckinRequest.class)
+            .switchIfEmpty(Mono.error(new ActivityException("请求体不能为空")))
+            .flatMap(req -> doCheckin(activityName, req))
+            .flatMap(registration -> ServerResponse.ok().bodyValue(registration))
+            .onErrorResume(ActivityException.class,
+                e -> badRequest(e.getMessage()));
+    }
+
+    private Mono<ActivityRegistration> doCheckin(String activityName, CheckinRequest req) {
+        if (req.phone() == null || req.phone().isBlank()) {
+            return Mono.error(new ActivityException("手机号不能为空"));
+        }
+        return client.fetch(Activity.class, activityName)
+            .switchIfEmpty(Mono.error(new ActivityException("活动不存在")))
+            .flatMap(activity -> client.listAll(ActivityRegistration.class,
+                    ListOptions.builder().build(),
+                    org.springframework.data.domain.Sort.unsorted())
+                .filter(r -> activityName.equals(r.getSpec().getActivityName()))
+                .filter(r -> req.phone().equals(r.getSpec().getPhone()))
+                .next()
+                .switchIfEmpty(Mono.error(new ActivityException("未找到该手机号的报名记录，请先报名")))
+                .flatMap(registration -> {
+                    var spec = registration.getSpec();
+                    if (Boolean.TRUE.equals(spec.getCheckedIn())) {
+                        return Mono.error(new ActivityException("该手机号已签到，请勿重复签到"));
+                    }
+                    spec.setCheckedIn(true);
+                    spec.setCheckedInAt(Instant.now());
+                    return client.update(registration);
+                }));
     }
 
     private Mono<ActivityRegistration> register(String activityName, RegistrationRequest req) {

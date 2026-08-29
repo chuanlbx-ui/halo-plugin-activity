@@ -80,6 +80,22 @@ function statusText(status?: string) {
   return map[status || 'PENDING'] || { text: status || '未知', type: 'default' }
 }
 
+async function toggleCheckin(reg: any) {
+  const name = reg.metadata?.name
+  const checkedIn = reg.spec?.checkedIn
+  try {
+    const action = checkedIn ? 'uncheckin' : 'checkin'
+    const { data } = await axios.post(`${API_BASE}/registrations/${name}/${action}`)
+    const idx = registrations.value.findIndex(r => r.metadata?.name === name)
+    if (idx >= 0) {
+      registrations.value[idx] = data
+    }
+    Toast.success(checkedIn ? '已取消签到' : '✅ 签到成功')
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.message || '操作失败')
+  }
+}
+
 onMounted(() => {
   loadActivity()
   fetchRegistrations()
@@ -120,7 +136,21 @@ onMounted(() => {
               <template #end>
                 <VEntityField>
                   <template #description>
-                    {{ formatTime(reg.spec?.registrationTime) }}
+                    <VStatusDot
+                      v-if="reg.spec?.checkedIn"
+                      text="✅ 已签到"
+                      state="success"
+                    />
+                    <VStatusDot
+                      v-else
+                      text="未签到"
+                      state="warning"
+                    />
+                  </template>
+                </VEntityField>
+                <VEntityField>
+                  <template #description>
+                    {{ reg.spec?.checkedInAt ? formatTime(reg.spec?.checkedInAt) : formatTime(reg.spec?.registrationTime) }}
                   </template>
                 </VEntityField>
                 <VEntityField>
@@ -129,6 +159,26 @@ onMounted(() => {
                       :text="statusText(reg.spec?.status).text"
                       :state="statusText(reg.spec?.status).type"
                     />
+                  </template>
+                </VEntityField>
+                <VEntityField>
+                  <template #description>
+                    <VButton
+                      v-if="!reg.spec?.checkedIn"
+                      size="sm"
+                      type="secondary"
+                      @click="toggleCheckin(reg)"
+                    >
+                      签到
+                    </VButton>
+                    <VButton
+                      v-else
+                      size="sm"
+                      type="default"
+                      @click="toggleCheckin(reg)"
+                    >
+                      取消签到
+                    </VButton>
                   </template>
                 </VEntityField>
               </template>

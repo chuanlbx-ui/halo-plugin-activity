@@ -144,6 +144,30 @@ public class ActivityConsoleEndpoint implements CustomEndpoint {
                 .response(responseBuilder()
                     .implementation(ListResult.generateGenericClass(ActivityRegistration.class)))
             )
+            .POST("registrations/{name}/checkin", this::consoleCheckin, builder -> builder
+                .operationId("ConsoleCheckinRegistration")
+                .description("Mark a registration as checked in.")
+                .tag(tag)
+                .parameter(parameterBuilder()
+                    .name("name")
+                    .in(ParameterIn.PATH)
+                    .required(true)
+                    .implementation(String.class))
+                .response(responseBuilder()
+                    .implementation(ActivityRegistration.class))
+            )
+            .POST("registrations/{name}/uncheckin", this::consoleUncheckin, builder -> builder
+                .operationId("ConsoleUncheckinRegistration")
+                .description("Undo check-in of a registration.")
+                .tag(tag)
+                .parameter(parameterBuilder()
+                    .name("name")
+                    .in(ParameterIn.PATH)
+                    .required(true)
+                    .implementation(String.class))
+                .response(responseBuilder()
+                    .implementation(ActivityRegistration.class))
+            )
             .build();
     }
 
@@ -252,6 +276,40 @@ public class ActivityConsoleEndpoint implements CustomEndpoint {
                     Comparator.reverseOrder()),
                 page, size))
             .flatMap(result -> ServerResponse.ok().bodyValue(result))
+            .onErrorResume(ActivityException.class, e -> badRequest(e.getMessage()));
+    }
+
+    private Mono<ServerResponse> consoleCheckin(ServerRequest request) {
+        String name = request.pathVariable("name");
+        return client.fetch(ActivityRegistration.class, name)
+            .switchIfEmpty(Mono.error(new ActivityException("报名记录不存在")))
+            .flatMap(registration -> {
+                var spec = registration.getSpec();
+                if (Boolean.TRUE.equals(spec.getCheckedIn())) {
+                    return Mono.error(new ActivityException("该报名已签到"));
+                }
+                spec.setCheckedIn(true);
+                spec.setCheckedInAt(Instant.now());
+                return client.update(registration);
+            })
+            .flatMap(updated -> ServerResponse.ok().bodyValue(updated))
+            .onErrorResume(ActivityException.class, e -> badRequest(e.getMessage()));
+    }
+
+    private Mono<ServerResponse> consoleUncheckin(ServerRequest request) {
+        String name = request.pathVariable("name");
+        return client.fetch(ActivityRegistration.class, name)
+            .switchIfEmpty(Mono.error(new ActivityException("报名记录不存在")))
+            .flatMap(registration -> {
+                var spec = registration.getSpec();
+                if (!Boolean.TRUE.equals(spec.getCheckedIn())) {
+                    return Mono.error(new ActivityException("该报名尚未签到"));
+                }
+                spec.setCheckedIn(false);
+                spec.setCheckedInAt(null);
+                return client.update(registration);
+            })
+            .flatMap(updated -> ServerResponse.ok().bodyValue(updated))
             .onErrorResume(ActivityException.class, e -> badRequest(e.getMessage()));
     }
 

@@ -56,5 +56,15 @@ public class ActivityRegistration extends AbstractExtension {
          * 报名状态：PENDING / APPROVED / REJECTED / CANCELLED。
          */
         private String status;
+
+        /**
+         * 是否已签到。
+         */
+        private Boolean checkedIn;
+
+        /**
+         * 签到时间。
+         */
+        private Instant checkedInAt;
     }
 }
