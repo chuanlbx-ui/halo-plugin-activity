@@ -4,9 +4,10 @@ apiVersion: plugin.halo.run/v1alpha1
 kind: Plugin
 metadata:
   # The name defines how the plugin is invoked, A unique name
-  name: starter
+  name: activity
 spec:
   enabled: true
+  version: "1.0.0"
   requires: ">=2.23.0"
   author:
     name: Halo
@@ -15,8 +16,8 @@ spec:
   homepage: https://github.com/halo-dev/plugin-starter#readme
   repo: https://github.com/halo-dev/plugin-starter
   issues: https://github.com/halo-dev/plugin-starter/issues
-  displayName: "插件快速开始模板"
-  description: "这是一个插件快速开始模板"
+  displayName: "活动管理"
+  description: "活动发布与报名管理插件，支持活动列表、详情、在线报名、名额控制与报名记录管理。"
   license:
     - name: "GPL-3.0"
       url: "https://github.com/halo-dev/plugin-starter/blob/main/LICENSE"

@@ -1,0 +1,35 @@
+# 角色模板：匿名用户可浏览活动并报名
+apiVersion: v1alpha1
+kind: Role
+metadata:
+  name: role-template-activity-viewer
+  labels:
+    halo.run/role-template: "true"
+    rbac.authorization.halo.run/aggregate-to-anonymous: "true"
+  annotations:
+    rbac.authorization.halo.run/module: "Activities"
+    rbac.authorization.halo.run/display-name: "活动浏览"
+    rbac.authorization.halo.run/ui-permissions: |
+      ["plugin:activity:view"]
+rules:
+  - apiGroups: ["api.activity.halo.run"]
+    resources: ["activities", "registrations", "activities/registration"]
+    verbs: ["get", "list", "create"]
+---
+# 角色模板：活动管理（可在控制台分配给其他用户）
+apiVersion: v1alpha1
+kind: Role
+metadata:
+  name: role-template-activity-manage
+  labels:
+    halo.run/role-template: "true"
+    rbac.authorization.halo.run/aggregate-to-console-ui: "true"
+  annotations:
+    rbac.authorization.halo.run/module: "Activities"
+    rbac.authorization.halo.run/display-name: "活动管理"
+    rbac.authorization.halo.run/ui-permissions: |
+      ["plugin:activity:manage"]
+rules:
+  - apiGroups: ["console.api.activity.halo.run", "activity.halo.run"]
+    resources: ["activities", "registrations"]
+    verbs: ["*"]
