@@ -8,6 +8,8 @@ import {
   VLoading,
   Toast,
 } from '@halo-dev/components'
+import { RichTextEditor, VueEditor, ExtensionsKit } from '@halo-dev/richtext-editor'
+import { consoleApiClient, type Attachment } from '@halo-dev/api-client'
 import axios from 'axios'
 
 const route = useRoute()
@@ -15,6 +17,7 @@ const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const isEdit = ref(false)
+const coverUploading = ref(false)
 
 const form = ref({
   title: '',
@@ -30,6 +33,50 @@ const form = ref({
 })
 
 const API_BASE = '/apis/console.api.activity.halo.run/v1alpha1'
+
+// ---------- 富文本编辑器 ----------
+const editor = new VueEditor({
+  extensions: [
+    ExtensionsKit.configure({
+      upload: {
+        upload: (fileOrUrl: File | string) => uploadAttachment(fileOrUrl),
+      },
+    }),
+  ],
+  content: '',
+  onUpdate: ({ editor: ed }) => {
+    form.value.content = ed.getHTML()
+  },
+})
+
+async function uploadAttachment(fileOrUrl: File | string): Promise<Attachment | undefined> {
+  try {
+    const { data } = await consoleApiClient.storage.attachment.uploadAttachmentForConsole(
+      fileOrUrl instanceof File ? { file: fileOrUrl } : { url: fileOrUrl }
+    )
+    return data
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.message || '图片上传失败')
+    return undefined
+  }
+}
+
+function onPickCover(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  coverUploading.value = true
+  uploadAttachment(file)
+    .then((att) => {
+      if (att) {
+        form.value.cover = att.status?.permalink || ''
+      }
+    })
+    .finally(() => {
+      coverUploading.value = false
+      input.value = ''
+    })
+}
 
 function emptyField() {
   return {
@@ -96,6 +143,7 @@ async function loadActivity(name: string) {
       content: spec.content || '',
       formFields: Array.isArray(spec.formFields) ? spec.formFields.map((f: any) => ({ ...f })) : [],
     }
+    editor.commands.setContent(spec.content || '')
   } catch (e: any) {
     Toast.error(e?.response?.data?.message || '加载活动失败')
     router.back()
@@ -205,13 +253,32 @@ onMounted(() => {
             />
           </div>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">封面图 URL</label>
-            <input
-              v-model="form.cover"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary"
-              placeholder="https://…"
-            />
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-gray-700">活动封面图</label>
+            <div class="flex items-start gap-3">
+              <div class="flex-1">
+                <div class="mb-2 flex items-center gap-2">
+                  <label
+                    class="inline-flex h-10 cursor-pointer items-center rounded border border-gray-300 bg-gray-50 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    {{ coverUploading ? '上传中…' : '📁 上传图片' }}
+                    <input type="file" accept="image/*" class="hidden" :disabled="coverUploading" @change="onPickCover" />
+                  </label>
+                  <span class="text-xs text-gray-400">或填写图片 URL</span>
+                </div>
+                <input
+                  v-model="form.cover"
+                  class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary"
+                  placeholder="https://…"
+                />
+              </div>
+              <div
+                v-if="form.cover"
+                class="h-24 w-36 shrink-0 overflow-hidden rounded border border-gray-200 bg-gray-50"
+              >
+                <img :src="form.cover" class="h-full w-full object-cover" alt="封面预览" />
+              </div>
+            </div>
           </div>
 
           <div>
@@ -258,13 +325,10 @@ onMounted(() => {
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-gray-700">活动详情（支持 HTML）</label>
-            <textarea
-              v-model="form.content"
-              rows="8"
-              class="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary"
-              placeholder="活动介绍、议程、注意事项…"
-            ></textarea>
+            <label class="mb-1 block text-sm font-medium text-gray-700">活动详情</label>
+            <div class="richtext-wrap">
+              <RichTextEditor :editor="editor" locale="zh-CN" />
+            </div>
           </div>
 
           <div class="md:col-span-2">
@@ -335,6 +399,18 @@ onMounted(() => {
 input:focus,
 select:focus,
 textarea:focus {
+  border-color: #4b5563;
+}
+
+.richtext-wrap :deep(.tiptap) {
+  min-height: 240px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.richtext-wrap :deep(.tiptap:focus) {
+  outline: none;
   border-color: #4b5563;
 }
 </style>

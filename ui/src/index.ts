@@ -4,6 +4,7 @@ import ActivityEditor from './views/ActivityEditor.vue'
 import RegistrationList from './views/RegistrationList.vue'
 import { IconPlug } from '@halo-dev/components'
 import { markRaw } from 'vue'
+import '@halo-dev/richtext-editor/dist/style.css'
 
 export default definePlugin({
   components: {},
