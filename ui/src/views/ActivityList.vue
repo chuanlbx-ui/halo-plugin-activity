@@ -115,7 +115,7 @@ onMounted(fetchActivities)
 </script>
 
 <template>
-  <div>
+  <div class="al-page">
     <VPageHeader title="活动管理">
       <template #actions>
         <VButton type="primary" @click="goCreate">
@@ -127,15 +127,10 @@ onMounted(fetchActivities)
       </template>
     </VPageHeader>
 
-    <div class="p-4">
-      <VCard :body-class="['p-4']">
-        <div class="mb-4 flex items-center gap-3">
-          <input
-            v-model="keyword"
-            class="h-9 flex-1 rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary"
-            placeholder="搜索活动标题…"
-            @keyup.enter="onSearch"
-          />
+    <div class="al-container">
+      <div class="al-card">
+        <div class="al-toolbar">
+          <input v-model="keyword" class="al-search" placeholder="搜索活动标题…" @keyup.enter="onSearch" />
           <VButton @click="onSearch">搜索</VButton>
         </div>
 
@@ -143,70 +138,70 @@ onMounted(fetchActivities)
 
         <VEmpty v-else-if="activities.length === 0" title="暂无活动" message="点击右上角「新建活动」创建第一个活动" />
 
-        <ul v-else class="divide-y divide-gray-100">
-          <li v-for="activity in activities" :key="activity.metadata?.name">
-            <VEntity>
-              <template #start>
-                <VEntityField :title="activity.spec?.title">
-                  <template #description>
-                    <span v-if="activity.spec?.location" class="mr-2">📍 {{ activity.spec.location }}</span>
-                    <span v-if="activity.spec?.startTime">{{ formatTime(activity.spec.startTime) }}</span>
-                  </template>
-                </VEntityField>
-              </template>
-              <template #end>
-                <VEntityField>
-                  <template #description>
-                    <VStatusDot
-                      :text="statusText(activity.spec?.status).text"
-                      :state="statusText(activity.spec?.status).type"
-                    />
-                  </template>
-                </VEntityField>
-                <VEntityField>
-                  <template #description>
-                    <VTag v-if="activity.spec?.quota && activity.spec.quota > 0">
-                      名额 {{ activity.spec.quota }}
-                    </VTag>
-                    <VTag v-else>不限名额</VTag>
-                  </template>
-                </VEntityField>
-                <VEntityField>
-                  <template #description>
-                    <div class="flex items-center gap-2">
-                      <VButton size="sm" @click="goRegistrations(activity)">
-                        <template #icon>
-                          <IconList />
-                        </template>
-                        报名记录
-                      </VButton>
-                      <VButton size="sm" type="secondary" @click="goEdit(activity)">
-                        编辑
-                      </VButton>
-                      <VButton size="sm" type="danger" :loading="deleting" @click="onDelete(activity)">
-                        <template #icon>
-                          <IconDeleteBin />
-                        </template>
-                        删除
-                      </VButton>
-                    </div>
-                  </template>
-                </VEntityField>
-              </template>
-            </VEntity>
-          </li>
-        </ul>
+        <div v-else class="al-list">
+          <div v-for="activity in activities" :key="activity.metadata?.name" class="al-row">
+            <div class="al-main">
+              <div class="al-title">{{ activity.spec?.title }}</div>
+              <div class="al-meta">
+                <span v-if="activity.spec?.location" class="al-meta-item">📍 {{ activity.spec.location }}</span>
+                <span v-if="activity.spec?.startTime" class="al-meta-item">{{ formatTime(activity.spec.startTime) }}</span>
+              </div>
+            </div>
 
-        <div v-if="total > size" class="mt-4 flex justify-end">
+            <div class="al-tags">
+              <VStatusDot :text="statusText(activity.spec?.status).text" :state="statusText(activity.spec?.status).type" />
+              <span class="al-tag">{{ activity.spec?.quota && activity.spec.quota > 0 ? '名额 ' + activity.spec.quota : '不限名额' }}</span>
+            </div>
+
+            <div class="al-actions">
+              <VButton size="sm" @click="goRegistrations(activity)">
+                <template #icon>
+                  <IconList />
+                </template>
+                报名记录
+              </VButton>
+              <VButton size="sm" type="secondary" @click="goEdit(activity)">编辑</VButton>
+              <VButton size="sm" type="danger" :loading="deleting" @click="onDelete(activity)">
+                <template #icon>
+                  <IconDeleteBin />
+                </template>
+                删除
+              </VButton>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="total > size" class="al-pagination">
           <VPagination :page="page" :size="size" :total="total" @change="onPageChange" />
         </div>
-      </VCard>
+      </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-input:focus {
-  border-color: #4b5563;
+<style>
+.al-page { min-height: 100%; }
+.al-container { padding: 16px 24px 40px; max-width: 1080px; }
+.al-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.al-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.al-search { flex: 1; max-width: 320px; height: 36px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; color: #1f2937; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+.al-search:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.al-list { display: flex; flex-direction: column; }
+.al-row { display: flex; align-items: center; gap: 16px; padding: 14px 4px; border-bottom: 1px solid #f3f4f6; transition: background 0.15s; }
+.al-row:last-child { border-bottom: none; }
+.al-row:hover { background: #fafafa; }
+.al-main { flex: 1; min-width: 0; }
+.al-title { font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-meta { display: flex; flex-wrap: wrap; gap: 12px; }
+.al-meta-item { font-size: 12px; color: #9ca3af; }
+.al-tags { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.al-tag { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; background: #eef4ff; color: #1a4f9e; font-size: 12px; }
+.al-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.al-pagination { display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+@media (max-width: 768px) {
+  .al-row { flex-wrap: wrap; gap: 10px; }
+  .al-main { flex: 1 1 100%; }
+  .al-tags { order: 3; }
+  .al-actions { order: 4; width: 100%; justify-content: flex-end; }
 }
 </style>

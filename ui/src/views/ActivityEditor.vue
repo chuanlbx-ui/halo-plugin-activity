@@ -230,7 +230,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="ae-page">
     <VPageHeader :title="isEdit ? '编辑活动' : '新建活动'">
       <template #actions>
         <VButton type="secondary" @click="router.back()">返回</VButton>
@@ -240,177 +240,216 @@ onMounted(() => {
       </template>
     </VPageHeader>
 
-    <div class="p-4">
+    <div class="ae-container">
       <VLoading v-if="loading" />
-      <VCard v-else :body-class="['p-6']">
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-gray-700">活动标题 *</label>
-            <input
-              v-model="form.title"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary"
-              placeholder="例如：AI 数字工匠训练营（第三期）"
-            />
-          </div>
 
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-gray-700">活动封面图</label>
-            <div class="flex items-start gap-3">
-              <div class="flex-1">
-                <div class="mb-2 flex items-center gap-2">
-                  <label
-                    class="inline-flex h-10 cursor-pointer items-center rounded border border-gray-300 bg-gray-50 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                  >
-                    {{ coverUploading ? '上传中…' : '📁 上传图片' }}
-                    <input type="file" accept="image/*" class="hidden" :disabled="coverUploading" @change="onPickCover" />
-                  </label>
-                  <span class="text-xs text-gray-400">或填写图片 URL</span>
-                </div>
-                <input
-                  v-model="form.cover"
-                  class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary"
-                  placeholder="https://…"
-                />
-              </div>
-              <div
-                v-if="form.cover"
-                class="h-24 w-36 shrink-0 overflow-hidden rounded border border-gray-200 bg-gray-50"
-              >
-                <img :src="form.cover" class="h-full w-full object-cover" alt="封面预览" />
-              </div>
+      <div v-else class="ae-form">
+        <section class="ae-section">
+          <div class="ae-section-title">
+            <span class="ae-section-icon">📋</span>
+            <div>
+              <h3>基本信息</h3>
+              <p>活动标题与封面图，标题会显示在活动列表和详情页</p>
             </div>
           </div>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">活动地点</label>
-            <input
-              v-model="form.location"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary"
-              placeholder="例如：文山州互联网协会会议室"
-            />
+          <div class="ae-field ae-field-full">
+            <label class="ae-label">活动标题 <span class="ae-req">*</span></label>
+            <input v-model="form.title" class="ae-input" placeholder="例如：AI 数字工匠训练营（第三期）" />
           </div>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">开始时间</label>
-            <input v-model="form.startTime" type="datetime-local"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary" />
+          <div class="ae-field ae-field-full">
+            <label class="ae-label">活动封面图</label>
+            <div class="ae-cover-row">
+              <div class="ae-cover-controls">
+                <div class="ae-cover-btns">
+                  <label class="ae-upload-btn">
+                    {{ coverUploading ? '上传中…' : '📁 上传图片' }}
+                    <input type="file" accept="image/*" class="hidden" :disabled="coverUploading" @change="onPickCover" />
+                  </label>
+                  <span class="ae-or">或填写图片 URL</span>
+                </div>
+                <input v-model="form.cover" class="ae-input" placeholder="https://…" />
+              </div>
+              <div v-if="form.cover" class="ae-cover-preview">
+                <img :src="form.cover" alt="封面预览" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="ae-section">
+          <div class="ae-section-title">
+            <span class="ae-section-icon">🕐</span>
+            <div>
+              <h3>时间与地点</h3>
+              <p>活动举办的时间地点，报名截止默认在开始前</p>
+            </div>
           </div>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">结束时间</label>
-            <input v-model="form.endTime" type="datetime-local"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary" />
+          <div class="ae-grid-2">
+            <div class="ae-field">
+              <label class="ae-label">活动地点</label>
+              <input v-model="form.location" class="ae-input" placeholder="例如：文山州互联网协会会议室" />
+            </div>
+            <div class="ae-field">
+              <label class="ae-label">报名名额 <span class="ae-hint">（0 = 不限）</span></label>
+              <input v-model.number="form.quota" type="number" min="0" class="ae-input" />
+            </div>
+            <div class="ae-field">
+              <label class="ae-label">开始时间</label>
+              <input v-model="form.startTime" type="datetime-local" class="ae-input" />
+            </div>
+            <div class="ae-field">
+              <label class="ae-label">结束时间</label>
+              <input v-model="form.endTime" type="datetime-local" class="ae-input" />
+            </div>
+            <div class="ae-field">
+              <label class="ae-label">报名截止时间</label>
+              <input v-model="form.registrationDeadline" type="datetime-local" class="ae-input" />
+            </div>
+            <div class="ae-field">
+              <label class="ae-label">状态</label>
+              <select v-model="form.status" class="ae-input">
+                <option value="PUBLISHED">已发布（前台可见可报名）</option>
+                <option value="DRAFT">草稿（前台不可见）</option>
+                <option value="ENDED">已结束</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="ae-section">
+          <div class="ae-section-title">
+            <span class="ae-section-icon">📝</span>
+            <div>
+              <h3>活动详情</h3>
+              <p>详细介绍活动内容、议程、适合人群，支持富文本格式</p>
+            </div>
           </div>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">报名截止时间</label>
-            <input v-model="form.registrationDeadline" type="datetime-local"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary" />
-          </div>
-
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">报名名额（0 = 不限）</label>
-            <input v-model.number="form.quota" type="number" min="0"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary" />
-          </div>
-
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">状态</label>
-            <select v-model="form.status"
-              class="h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:border-primary">
-              <option value="PUBLISHED">已发布</option>
-              <option value="DRAFT">草稿</option>
-              <option value="ENDED">已结束</option>
-            </select>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-gray-700">活动详情</label>
+          <div class="ae-field ae-field-full">
             <div class="richtext-wrap">
               <RichTextEditor :editor="editor" locale="zh-CN" />
             </div>
           </div>
+        </section>
 
-          <div class="md:col-span-2">
-            <div class="mb-2 flex items-center justify-between">
-              <label class="block text-sm font-medium text-gray-700">
-                报名表单自定义字段
-                <span class="ml-1 text-xs font-normal text-gray-400">（姓名、手机号为内置必填，以下字段可自由增删配置）</span>
-              </label>
-              <VButton size="sm" type="secondary" @click="addField">+ 添加字段</VButton>
+        <section class="ae-section">
+          <div class="ae-section-title">
+            <span class="ae-section-icon">🧩</span>
+            <div class="ae-section-title-text">
+              <h3>报名表单自定义字段</h3>
+              <p>姓名、手机号为内置必填，以下字段可自由增删配置</p>
             </div>
+            <VButton size="sm" type="secondary" class="ae-add-btn" @click="addField">+ 添加字段</VButton>
+          </div>
 
-            <div v-if="form.formFields.length === 0" class="rounded border border-dashed border-gray-300 p-4 text-center text-sm text-gray-400">
-              暂无自定义字段。点「添加字段」可增加如公司名称、职务、参加人数等报名必填/选填项。
-            </div>
+          <div v-if="form.formFields.length === 0" class="ae-empty-fields">
+            暂无自定义字段。点「添加字段」可增加如公司名称、职务、参加人数等报名必填/选填项。
+          </div>
 
-            <div v-for="(field, idx) in form.formFields" :key="idx" class="mb-3 rounded border border-gray-200 p-3">
-              <div class="mb-2 flex items-center justify-between">
-                <span class="text-xs font-semibold text-gray-500">字段 {{ idx + 1 }}</span>
-                <div class="flex items-center gap-1">
-                  <button type="button" class="rounded px-1.5 py-0.5 text-gray-400 hover:bg-gray-100" @click="moveField(idx, -1)" :disabled="idx === 0">↑</button>
-                  <button type="button" class="rounded px-1.5 py-0.5 text-gray-400 hover:bg-gray-100" @click="moveField(idx, 1)" :disabled="idx === form.formFields.length - 1">↓</button>
-                  <button type="button" class="rounded px-1.5 py-0.5 text-red-400 hover:bg-red-50" @click="removeField(idx)">✕ 删除</button>
-                </div>
+          <div v-for="(field, idx) in form.formFields" :key="idx" class="ae-field-card">
+            <div class="ae-field-card-head">
+              <span class="ae-field-card-no">字段 {{ idx + 1 }}</span>
+              <div class="ae-field-card-ops">
+                <button type="button" class="ae-icon-btn" @click="moveField(idx, -1)" :disabled="idx === 0" title="上移">↑</button>
+                <button type="button" class="ae-icon-btn" @click="moveField(idx, 1)" :disabled="idx === form.formFields.length - 1" title="下移">↓</button>
+                <button type="button" class="ae-icon-btn ae-icon-btn-danger" @click="removeField(idx)" title="删除">✕ 删除</button>
               </div>
-              <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
-                <div>
-                  <label class="mb-0.5 block text-xs text-gray-500">字段名（英文）*</label>
-                  <input v-model="field.name" class="h-8 w-full rounded border border-gray-300 px-2 text-xs outline-none focus:border-primary" placeholder="company" @blur="field.name = field.name.trim(); if (!field.label && field.name) field.label = nameToLabel(field.name)" />
-                </div>
-                <div>
-                  <label class="mb-0.5 block text-xs text-gray-500">显示名称 *</label>
-                  <input v-model="field.label" class="h-8 w-full rounded border border-gray-300 px-2 text-xs outline-none focus:border-primary" placeholder="公司名称" />
-                </div>
-                <div>
-                  <label class="mb-0.5 block text-xs text-gray-500">类型</label>
-                  <select v-model="field.type" class="h-8 w-full rounded border border-gray-300 px-1 text-xs outline-none focus:border-primary">
-                    <option value="text">单行文本</option>
-                    <option value="textarea">多行文本</option>
-                    <option value="select">下拉选择</option>
-                    <option value="number">数字</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="mb-0.5 block text-xs text-gray-500">是否必填</label>
-                  <select v-model="field.required" class="h-8 w-full rounded border border-gray-300 px-1 text-xs outline-none focus:border-primary">
-                    <option :value="false">选填</option>
-                    <option :value="true">必填</option>
-                  </select>
-                </div>
-                <div v-if="field.type === 'select'" class="col-span-2">
-                  <label class="mb-0.5 block text-xs text-gray-500">选项（逗号分隔）*</label>
-                  <input v-model="field.options" class="h-8 w-full rounded border border-gray-300 px-2 text-xs outline-none focus:border-primary" placeholder="选项一,选项二,选项三" />
-                </div>
-                <div class="col-span-2">
-                  <label class="mb-0.5 block text-xs text-gray-500">占位提示（选填）</label>
-                  <input v-model="field.placeholder" class="h-8 w-full rounded border border-gray-300 px-2 text-xs outline-none focus:border-primary" placeholder="请输入…" />
-                </div>
+            </div>
+            <div class="ae-grid-4">
+              <div class="ae-field">
+                <label class="ae-label ae-label-sm">字段名（英文）<span class="ae-req">*</span></label>
+                <input v-model="field.name" class="ae-input" placeholder="company"
+                  @blur="field.name = field.name.trim(); if (!field.label && field.name) field.label = nameToLabel(field.name)" />
+              </div>
+              <div class="ae-field">
+                <label class="ae-label ae-label-sm">显示名称 <span class="ae-req">*</span></label>
+                <input v-model="field.label" class="ae-input" placeholder="公司名称" />
+              </div>
+              <div class="ae-field">
+                <label class="ae-label ae-label-sm">类型</label>
+                <select v-model="field.type" class="ae-input">
+                  <option value="text">单行文本</option>
+                  <option value="textarea">多行文本</option>
+                  <option value="select">下拉选择</option>
+                  <option value="number">数字</option>
+                </select>
+              </div>
+              <div class="ae-field">
+                <label class="ae-label ae-label-sm">是否必填</label>
+                <select v-model="field.required" class="ae-input">
+                  <option :value="false">选填</option>
+                  <option :value="true">必填</option>
+                </select>
+              </div>
+              <div v-if="field.type === 'select'" class="ae-field ae-span-2">
+                <label class="ae-label ae-label-sm">选项（逗号分隔）<span class="ae-req">*</span></label>
+                <input v-model="field.options" class="ae-input" placeholder="选项一,选项二,选项三" />
+              </div>
+              <div class="ae-field ae-span-2">
+                <label class="ae-label ae-label-sm">占位提示（选填）</label>
+                <input v-model="field.placeholder" class="ae-input" placeholder="请输入…" />
               </div>
             </div>
           </div>
+        </section>
+
+        <div class="ae-footer">
+          <VButton type="secondary" @click="router.back()">取消</VButton>
+          <VButton type="primary" :loading="saving" @click="onSubmit">
+            {{ isEdit ? '保存修改' : '创建活动' }}
+          </VButton>
         </div>
-      </VCard>
+      </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: #4b5563;
-}
-
-.richtext-wrap :deep(.tiptap) {
-  min-height: 240px;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-}
-
-.richtext-wrap :deep(.tiptap:focus) {
-  outline: none;
-  border-color: #4b5563;
-}
+<style>
+.ae-page { min-height: 100%; }
+.ae-container { padding: 16px 24px 40px; max-width: 920px; }
+.ae-form { display: flex; flex-direction: column; gap: 18px; }
+.ae-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 22px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.ae-section-title { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #f3f4f6; }
+.ae-section-icon { font-size: 20px; line-height: 1.4; }
+.ae-section-title h3 { margin: 0; font-size: 15px; font-weight: 600; color: #1f2937; }
+.ae-section-title p { margin: 3px 0 0; font-size: 12px; color: #9ca3af; }
+.ae-section-title-text { flex: 1; }
+.ae-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+.ae-field-full { margin-bottom: 12px; }
+.ae-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+.ae-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 14px; }
+.ae-span-2 { grid-column: span 2; }
+@media (max-width: 768px) { .ae-grid-2, .ae-grid-4 { grid-template-columns: 1fr; } .ae-span-2 { grid-column: span 1; } }
+.ae-label { display: block; font-size: 13px; font-weight: 500; color: #374151; }
+.ae-label-sm { font-size: 12px; color: #6b7280; }
+.ae-req { color: #ef4444; }
+.ae-hint { font-size: 11px; font-weight: 400; color: #9ca3af; }
+.ae-input { width: 100%; height: 36px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; color: #1f2937; background: #fff; outline: none; transition: border-color 0.15s, box-shadow 0.15s; box-sizing: border-box; }
+.ae-input:hover { border-color: #9ca3af; }
+.ae-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+select.ae-input { padding-right: 8px; appearance: auto; }
+.ae-cover-row { display: flex; gap: 16px; align-items: flex-start; }
+.ae-cover-controls { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.ae-cover-btns { display: flex; align-items: center; gap: 10px; }
+.ae-upload-btn { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border: 1px solid #d1d5db; border-radius: 8px; background: #f9fafb; font-size: 13px; font-weight: 500; color: #374151; cursor: pointer; transition: background 0.15s; }
+.ae-upload-btn:hover { background: #f3f4f6; }
+.ae-or { font-size: 12px; color: #9ca3af; }
+.ae-cover-preview { width: 160px; height: 90px; border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; background: #f9fafb; flex-shrink: 0; }
+.ae-cover-preview img { width: 100%; height: 100%; object-fit: cover; }
+.ae-empty-fields { padding: 20px; text-align: center; font-size: 13px; color: #9ca3af; border: 1px dashed #d1d5db; border-radius: 10px; background: #fafafa; }
+.ae-field-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; background: #fcfcfd; }
+.ae-field-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ae-field-card-no { font-size: 12px; font-weight: 600; color: #6b7280; }
+.ae-field-card-ops { display: flex; gap: 4px; }
+.ae-icon-btn { padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; font-size: 12px; color: #6b7280; cursor: pointer; transition: all 0.15s; }
+.ae-icon-btn:hover:not(:disabled) { background: #f3f4f6; color: #1f2937; }
+.ae-icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.ae-icon-btn-danger:hover:not(:disabled) { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.ae-footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+.richtext-wrap :deep(.tiptap) { min-height: 240px; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+.richtext-wrap :deep(.tiptap:focus) { outline: none; border-color: #2563eb; }
+.ae-add-btn { margin-left: auto; }
 </style>

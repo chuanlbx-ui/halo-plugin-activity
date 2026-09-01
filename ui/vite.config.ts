@@ -1,4 +1,6 @@
 import { fileURLToPath, URL } from 'url'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 
 import { viteConfig } from '@halo-dev/ui-plugin-bundler-kit'
 import Icons from 'unplugin-icons/vite'
@@ -12,6 +14,15 @@ export default viteConfig({
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
+
+    css: {
+      postcss: {
+        plugins: [
+          tailwindcss(),
+          autoprefixer(),
+        ],
       },
     },
 

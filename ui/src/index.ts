@@ -5,6 +5,7 @@ import RegistrationList from './views/RegistrationList.vue'
 import { IconPlug } from '@halo-dev/components'
 import { markRaw } from 'vue'
 import '@halo-dev/richtext-editor/dist/style.css'
+import './assets/tailwind.css'
 
 export default definePlugin({
   components: {},
