@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   VButton,
@@ -30,6 +30,7 @@ const form = ref({
   status: 'PUBLISHED',
   content: '',
   formFields: [] as any[],
+  metadataVersion: '',
 })
 
 const API_BASE = '/apis/console.api.activity.halo.run/v1alpha1'
@@ -142,8 +143,11 @@ async function loadActivity(name: string) {
       status: spec.status || 'PUBLISHED',
       content: spec.content || '',
       formFields: Array.isArray(spec.formFields) ? spec.formFields.map((f: any) => ({ ...f })) : [],
+      metadataVersion: data.metadata?.version || '',
     }
-    editor.commands.setContent(spec.content || '')
+    if (editor.commands) {
+      editor.commands.setContent(spec.content || '')
+    }
   } catch (e: any) {
     Toast.error(e?.response?.data?.message || '加载活动失败')
     router.back()
@@ -182,7 +186,9 @@ async function onSubmit() {
     const payload: any = {
       apiVersion: 'activity.halo.run/v1alpha1',
       kind: 'Activity',
-      metadata: {},
+      metadata: {
+        version: form.value.metadataVersion || undefined,
+      },
       spec: {
         title: form.value.title.trim(),
         cover: form.value.cover || undefined,
@@ -225,6 +231,15 @@ onMounted(() => {
   if (name) {
     isEdit.value = true
     loadActivity(String(name))
+  }
+})
+
+onUnmounted(() => {
+  // 组件卸载时销毁编辑器，避免 TipTap keyed plugin 重复注册导致 RangeError
+  try {
+    editor.destroy?.()
+  } catch (e) {
+    // ignore
   }
 })
 </script>

@@ -247,6 +247,11 @@ public class ActivityConsoleEndpoint implements CustomEndpoint {
                             }
                         }
                         activity.getMetadata().setName(name);
+                        // 关键：保持旧数据的版本号，否则 Halo 的 update 会退化为 create 导致主键冲突 500
+                        var oldVersion = oldActivity.getMetadata().getVersion();
+                        if (oldVersion != null) {
+                            activity.getMetadata().setVersion(oldVersion);
+                        }
                         return client.update(activity);
                     });
             })
