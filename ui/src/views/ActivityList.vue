@@ -178,30 +178,3 @@ onMounted(fetchActivities)
     </div>
   </div>
 </template>
-
-<style>
-.al-page { min-height: 100%; }
-.al-container { padding: 16px 24px 40px; max-width: 1080px; }
-.al-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-.al-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.al-search { flex: 1; max-width: 320px; height: 36px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; color: #1f2937; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
-.al-search:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-.al-list { display: flex; flex-direction: column; }
-.al-row { display: flex; align-items: center; gap: 16px; padding: 14px 4px; border-bottom: 1px solid #f3f4f6; transition: background 0.15s; }
-.al-row:last-child { border-bottom: none; }
-.al-row:hover { background: #fafafa; }
-.al-main { flex: 1; min-width: 0; }
-.al-title { font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.al-meta { display: flex; flex-wrap: wrap; gap: 12px; }
-.al-meta-item { font-size: 12px; color: #9ca3af; }
-.al-tags { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.al-tag { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; background: #eef4ff; color: #1a4f9e; font-size: 12px; }
-.al-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.al-pagination { display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
-@media (max-width: 768px) {
-  .al-row { flex-wrap: wrap; gap: 10px; }
-  .al-main { flex: 1 1 100%; }
-  .al-tags { order: 3; }
-  .al-actions { order: 4; width: 100%; justify-content: flex-end; }
-}
-</style>
