@@ -10,14 +10,14 @@ spec:
   version: "1.0.0"
   requires: ">=2.23.0"
   author:
-    name: Halo
-    website: https://github.com/halo-dev
+    name: Wenshan Internet Association
+    website: https://aiedu.yn.cn
   logo: logo.png
-  homepage: https://github.com/halo-dev/plugin-starter#readme
-  repo: https://github.com/halo-dev/plugin-starter
-  issues: https://github.com/halo-dev/plugin-starter/issues
+  homepage: https://aiedu.yn.cn
+  repo: https://github.com/chuanlbx-ui/halo-plugin-activity
+  issues: https://github.com/chuanlbx-ui/halo-plugin-activity/issues
   displayName: "活动管理"
-  description: "活动发布与报名管理插件，支持活动列表、详情、在线报名、名额控制与报名记录管理。"
+  description: "活动发布与报名管理插件：活动列表、活动详情、在线报名、名额控制、报名记录管理与签到。适合协会/社团/商家发布线下活动并在线收集报名。"
   license:
     - name: "GPL-3.0"
-      url: "https://github.com/halo-dev/plugin-starter/blob/main/LICENSE"
+      url: "https://github.com/chuanlbx-ui/halo-plugin-activity/blob/main/LICENSE"

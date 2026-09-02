@@ -1,79 +1,88 @@
-# plugin-starter
+# 活动管理（Halo 插件）
 
-Halo 2.x 插件开发快速开始模板。
+> Halo 2.x 活动发布与报名管理插件：活动列表、活动详情、在线报名、名额控制、报名记录管理与现场签到。适合协会、社团、商家、机构发布线下活动并在线收集报名。
 
-> [!WARNING]
-> 此项目将在未来被标记为过时，后续建议使用 [halo-dev/create-halo-plugin](https://github.com/halo-dev/create-halo-plugin) 以交互式的方式创建 Halo 插件项目。
+## ✨ 功能特性
 
-## 开发环境
+- 📋 **活动发布**：标题、封面、富文本详情、时间地点、名额限制、报名截止时间
+- 📝 **在线报名**：前台表单提交报名（姓名+手机号），可自定义报名附加字段（公司/职务等下拉或文本）
+- 🧮 **名额控制**：报满自动提示，超名额提交自动拒绝
+- 👥 **报名记录管理**：后台查看报名名单、导出核对
+- ✅ **现场签到**：报名人凭手机号现场签到/签退（签到海报可生成二维码）
+- 🔗 **微信分享友好**：分享到微信自动带卡片标题/封面（配合站点 og 配置）
 
-插件开发的详细文档请查阅：<https://docs.halo.run/developer-guide/plugin/introduction>
+## 📥 安装
 
-所需环境：
+1. 在 Halo 后台 **插件 → 安装**，上传 `activity-1.0.0.jar`（或从 Halo 应用市场直接安装）
+2. 启用插件后，左侧菜单出现 **内容 → 活动管理**
+3. 点击「➕ 新建活动」创建第一个活动并发布
 
-1. JDK 21
-2. Node 20
-3. pnpm 9
-4. Docker (可选)
+> 要求 Halo ≥ 2.23.0
 
-克隆项目：
+## 🚀 使用说明
+
+### 管理后台
+
+1. **活动列表**：查看全部活动状态（草稿/已发布/已结束），支持编辑、删除
+2. **新建/编辑活动**：
+   - 📋 基本信息：活动标题、封面图（上传）
+   - 🕐 时间与地点：开始/结束时间、地点
+   - 📝 活动详情：富文本编辑（支持图片、排版）
+   - 🧩 报名字段：报名附加字段（公司、职务等自定义选项）
+3. **报名记录**：查看报名名单、签到状态、取消报名
+4. **现场签到**：输入报名手机号或扫描签到海报二维码完成签到
+
+### 前台展示
+
+- 活动列表页：展示进行中/即将开始的活动卡片
+- 活动详情页：标题、封面、时间地点、详情内容、报名按钮、已报名人数
+- 报名成功后显示报名信息；到现场可凭手机号签到
+
+### 自定义报名字段
+
+在活动编辑页的「报名字段」区域添加自定义字段，支持：
+
+- 文本输入（如：公司/单位）
+- 下拉选项（如：职务 = 总经理/高管/员工）
+
+报名表单会自动展示这些字段，报名记录中也会保存对应值。
+
+## ❓ FAQ
+
+**Q：如何防止同一人重复报名？**
+A：当前版本以手机号唯一判断，同一活动同一手机号仅允许报名一次。
+
+**Q：活动报满后还能报名吗？**
+A：报满后前台按钮自动变为「已报满」，无法继续提交。
+
+**Q：活动已结束还能签到吗？**
+A：可以，签到功能独立于活动状态，只要报名人手机号匹配即可签退登记。
+
+**Q：活动封面图在哪上传？**
+A：活动编辑页「基本信息 → 封面图」，支持从 Halo 附件库选择或直接上传。
+
+**Q：微信里打开报名页样式错乱？**
+A：请确保 Halo 站点配好移动端主题并开启 HTTPS；本插件前台页面为移动端优先设计。
+
+## 🔧 开发调试
 
 ```bash
-git clone git@github.com:halo-sigs/plugin-starter.git
+# 前端 UI
+cd ui && pnpm install && pnpm dev
 
-# 或者当你 fork 之后
-
-git clone git@github.com:{your_github_id}/plugin-starter.git
-```
-
-```bash
-cd path/to/plugin-starter
-```
-
-### 运行方式 1（推荐）
-
-> 此方式需要本地安装 Docker
-
-```bash
-# macOS / Linux
-./gradlew pnpmInstall
-
-# Windows
-./gradlew.bat pnpmInstall
-```
-
-```bash
-# macOS / Linux
-./gradlew haloServer
-
-# Windows
-./gradlew.bat haloServer
-```
-
-执行此命令后，会自动创建一个 Halo 的 Docker 容器并加载当前的插件，更多文档可查阅：<https://docs.halo.run/developer-guide/plugin/basics/devtools>
-
-### 运行方式 2
-
-> 此方式需要使用源码运行 Halo
-
-编译插件：
-
-```bash
-# macOS / Linux
+# 插件构建
 ./gradlew build
 
-# Windows
-./gradlew.bat build
+# 本地 Halo 运行调试
+./gradlew haloServer
 ```
 
-修改 Halo 配置文件：
+开发文档：<https://docs.halo.run/developer-guide/plugin/introduction>
 
-```yaml
-halo:
-  plugin:
-    runtime-mode: development
-    fixedPluginPath:
-      - "/path/to/plugin-starter"
-```
+## 🧩 相关项目
 
-最后重启 Halo 项目即可。
+- [Halo 物业费收缴管理插件](https://github.com/chuanlbx-ui/halo-plugin-property-fee)（物业费线上收缴）
+
+## 📄 许可证
+
+[GPL-3.0](LICENSE)
