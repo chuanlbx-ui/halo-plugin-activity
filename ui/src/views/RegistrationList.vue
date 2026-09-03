@@ -128,17 +128,22 @@ onMounted(() => {
               <template #start>
                 <VEntityField :title="reg.spec?.name">
                   <template #description>
-                    <span class="mr-2">📱 {{ reg.spec?.phone }}</span>
-                    <span v-if="reg.spec?.remark" class="mr-2">备注：{{ reg.spec.remark }}</span>
-                    <template v-if="reg.spec?.customFields && activity?.spec?.formFields">
-                      <span
-                        v-for="ff in activity.spec.formFields"
-                        :key="ff.name"
-                        class="mr-2"
-                      >
-                        {{ ff.label }}：{{ reg.spec.customFields[ff.name] || '-' }}
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 py-0.5">
+                      <span class="whitespace-nowrap">📱 {{ reg.spec?.phone }}</span>
+                      <span v-if="reg.spec?.remark" class="whitespace-nowrap">备注：{{ reg.spec.remark }}</span>
+                      <template v-if="reg.spec?.customFields && activity?.spec?.formFields">
+                        <span
+                          v-for="ff in activity.spec.formFields"
+                          :key="ff.name"
+                          class="whitespace-nowrap"
+                        >
+                          {{ ff.label }}：{{ reg.spec.customFields[ff.name] || '-' }}
+                        </span>
+                      </template>
+                      <span class="text-xs text-gray-400">
+                        {{ reg.spec?.checkedInAt ? formatTime(reg.spec?.checkedInAt) : formatTime(reg.spec?.registrationTime) }}
                       </span>
-                    </template>
+                    </div>
                   </template>
                 </VEntityField>
               </template>
@@ -155,11 +160,6 @@ onMounted(() => {
                       text="未签到"
                       state="warning"
                     />
-                  </template>
-                </VEntityField>
-                <VEntityField>
-                  <template #description>
-                    {{ reg.spec?.checkedInAt ? formatTime(reg.spec?.checkedInAt) : formatTime(reg.spec?.registrationTime) }}
                   </template>
                 </VEntityField>
                 <VEntityField>
