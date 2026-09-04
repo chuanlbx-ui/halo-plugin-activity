@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   VButton,
@@ -11,8 +11,6 @@ import {
 import { RichTextEditor, VueEditor, ExtensionsKit } from '@halo-dev/richtext-editor'
 import { consoleApiClient, type Attachment } from '@halo-dev/api-client'
 import axios from 'axios'
-import Cropper from 'cropperjs'
-import 'cropperjs/dist/cropper.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -132,82 +130,165 @@ function onPickCover(e: Event) {
     })
 }
 
-// ---------- 封面 16:9 在线裁剪 ----------
+// ---------- 封面 16:9 在线裁剪（自研：单图 transform 拖动/缩放，不依赖 cropperjs）----------
 const cropOpen = ref(false)
 const cropImgUrl = ref('')
-const cropBox = ref<HTMLImageElement | null>(null)
+const cropStage = ref<HTMLDivElement | null>(null)
+const cropImgEl = ref<HTMLImageElement | null>(null)
 const cropUploading = ref(false)
 const cropReady = ref(false)
-let cropper: Cropper | null = null
-let cropLoaded = false
+
+const cropView = reactive({
+  nw: 0, nh: 0, // 原图像素
+  base: 1, // 基准缩放（contain 到 16:9 框）
+  s: 1, // 当前倍数（相对 base）
+  tx: 0, ty: 0, // 位移 px
+  fw: 0, fh: 0, // 16:9 框尺寸
+  maxTx: 0, maxTy: 0,
+})
+let cropDragging = false
+let cropDragX = 0
+let cropDragY = 0
+let cropDragTx = 0
+let cropDragTy = 0
+
+const cropPhotoStyle = computed(() => ({
+  width: (cropView.nw * cropView.base || 1) + 'px',
+  height: (cropView.nh * cropView.base || 1) + 'px',
+  transform:
+    'translate(calc(-50% + ' + cropView.tx + 'px), calc(-50% + ' + cropView.ty + 'px)) scale(' + cropView.s + ')',
+}))
+
+function cropRenderW() {
+  return cropView.nw * cropView.base * cropView.s
+}
+function cropRenderH() {
+  return cropView.nh * cropView.base * cropView.s
+}
+function cropClamp() {
+  const rw = cropRenderW()
+  const rh = cropRenderH()
+  cropView.maxTx = Math.max(0, (rw - cropView.fw) / 2)
+  cropView.maxTy = Math.max(0, (rh - cropView.fh) / 2)
+  cropView.tx = Math.min(Math.max(cropView.tx, -cropView.maxTx), cropView.maxTx)
+  cropView.ty = Math.min(Math.max(cropView.ty, -cropView.maxTy), cropView.maxTy)
+}
 
 function openCrop(url: string) {
-  cropLoaded = false
   cropReady.value = false
+  cropView.nw = 0
+  cropView.s = 1
+  cropView.tx = 0
+  cropView.ty = 0
   cropImgUrl.value = url
   cropOpen.value = true
 }
 
-// 图片自身加载完成即初始化 Cropper（比外部 Image 更可靠，避免大图加载期间无交互）
+// 图片加载完成 → 测量并进入可裁剪状态
 function onCropImgLoaded() {
-  if (cropLoaded) return
-  cropLoaded = true
+  const img = cropImgEl.value
+  const stage = cropStage.value
+  if (!img || !stage) return
+  cropView.nw = img.naturalWidth
+  cropView.nh = img.naturalHeight
+  if (!cropView.nw || !cropView.nh) return
+  cropView.fw = stage.clientWidth || stage.offsetWidth
+  cropView.fh = stage.clientHeight || stage.offsetHeight
+  if (!cropView.fw || !cropView.fh) return
+  cropView.base = Math.min(cropView.fw / cropView.nw, cropView.fh / cropView.nh)
+  cropView.s = 1
+  cropView.tx = 0
+  cropView.ty = 0
+  cropClamp()
   cropReady.value = true
-  requestAnimationFrame(() => {
-    if (!cropBox.value) return
-    if (cropper) cropper.destroy()
-    try {
-      cropper = new Cropper(cropBox.value, {
-        aspectRatio: 16 / 9,
-        viewMode: 1,
-        autoCropArea: 1,
-        dragMode: 'move',
-        guides: true,
-        center: true,
-        background: false,
-        responsive: true,
-        checkOrientation: true,
-      })
-    } catch (err) {
-      Toast.error('裁剪初始化失败，请重试或更换图片')
-      closeCrop()
-    }
-  })
 }
 
-function cropperZoom(delta: number) {
-  if (cropper) cropper.zoom(delta)
+function cropOnDown(e: PointerEvent) {
+  if (!cropReady.value) return
+  e.preventDefault()
+  cropDragging = true
+  cropDragX = e.clientX
+  cropDragY = e.clientY
+  cropDragTx = cropView.tx
+  cropDragTy = cropView.ty
+  window.addEventListener('pointermove', cropOnMove)
+  window.addEventListener('pointerup', cropOnUp)
+  window.addEventListener('pointercancel', cropOnUp)
 }
-function cropperMove(dx: number, dy: number) {
-  if (cropper) cropper.move(dx, dy)
+function cropOnMove(e: PointerEvent) {
+  if (!cropDragging) return
+  cropView.tx = cropDragTx + (e.clientX - cropDragX)
+  cropView.ty = cropDragTy + (e.clientY - cropDragY)
+  cropClamp()
 }
-function cropperReset() {
-  if (cropper) cropper.reset()
+function cropOnUp() {
+  cropDragging = false
+  window.removeEventListener('pointermove', cropOnMove)
+  window.removeEventListener('pointerup', cropOnUp)
+  window.removeEventListener('pointercancel', cropOnUp)
+}
+function cropOnWheel(e: WheelEvent) {
+  e.preventDefault()
+  if (!cropReady.value) return
+  const factor = e.deltaY < 0 ? 1.12 : 0.9
+  cropView.s = Math.min(Math.max(cropView.s * factor, 0.5), 12)
+  cropClamp()
+}
+function cropZoomBy(factor: number) {
+  if (!cropReady.value) return
+  cropView.s = Math.min(Math.max(cropView.s * factor, 0.5), 12)
+  cropClamp()
+}
+function cropMoveBy(dx: number, dy: number) {
+  if (!cropReady.value) return
+  cropView.tx += dx
+  cropView.ty += dy
+  cropClamp()
+}
+function cropResetView() {
+  if (!cropReady.value) return
+  cropView.s = 1
+  cropView.tx = 0
+  cropView.ty = 0
+  cropClamp()
 }
 
 function closeCrop() {
-  if (cropper) {
-    cropper.destroy()
-    cropper = null
-  }
+  cropOnUp()
   if (cropImgUrl.value) {
     URL.revokeObjectURL(cropImgUrl.value)
   }
-  cropLoaded = false
-  cropReady.value = false
   cropImgUrl.value = ''
+  cropReady.value = false
   cropOpen.value = false
 }
 
 async function confirmCrop() {
-  if (!cropper) return
+  const img = cropImgEl.value
+  if (!img || !cropReady.value) return
   cropUploading.value = true
   try {
-    const canvas = cropper.getCroppedCanvas({
-      width: 1600,
-      height: 900,
-      imageSmoothingQuality: 'high',
-    })
+    // 将 16:9 可视框内容映射回原图坐标并绘制 1600×900
+    const k = cropView.base * cropView.s
+    const rw = cropRenderW()
+    const rh = cropRenderH()
+    const cx = cropView.fw / 2
+    const cy = cropView.fh / 2
+    const ix = cx + cropView.tx - rw / 2
+    const iy = cy + cropView.ty - rh / 2
+    const sx = Math.max(0, -ix / k)
+    const sy = Math.max(0, -iy / k)
+    const sw = Math.min(cropView.nw - sx, cropView.fw / k)
+    const sh = Math.min(cropView.nh - sy, cropView.fh / k)
+    const canvas = document.createElement('canvas')
+    canvas.width = 1600
+    canvas.height = 900
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, 1600, 900)
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 1600, 900)
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92)
     )
@@ -575,19 +656,32 @@ onUnmounted(() => {
     <div v-if="cropOpen" class="ae-crop-mask" @click.self="closeCrop">
       <div class="ae-crop-panel">
         <h3>✂️ 裁剪封面（16:9）</h3>
-        <p class="ae-crop-tip">拖动图片调整位置、滚轮缩放画面；也可用下方按钮微调，确认后自动生成 16:9 封面并上传。</p>
-        <div class="ae-crop-stage">
-          <img v-if="cropImgUrl" ref="cropBox" :src="cropImgUrl" alt="封面裁剪预览" @load="onCropImgLoaded" />
+        <p class="ae-crop-tip">直接拖动图片调整位置、滚轮缩放画面；也可用下方按钮微调。确认后自动生成 16:9 封面并上传。</p>
+        <div ref="cropStage" class="ae-crop-stage" @wheel.prevent="cropOnWheel" @pointerdown="cropOnDown" @dragstart.prevent>
+          <img
+            v-if="cropImgUrl"
+            ref="cropImgEl"
+            class="ae-crop-photo"
+            :src="cropImgUrl"
+            :style="cropPhotoStyle"
+            draggable="false"
+            alt="封面裁剪预览"
+            @load="onCropImgLoaded"
+          />
+          <i class="ae-crop-line ae-crop-line-v1"></i>
+          <i class="ae-crop-line ae-crop-line-v2"></i>
+          <i class="ae-crop-line ae-crop-line-h1"></i>
+          <i class="ae-crop-line ae-crop-line-h2"></i>
           <div v-if="!cropReady" class="ae-crop-loading">图片加载中…</div>
         </div>
         <div class="ae-crop-tools" v-if="cropReady">
-          <VButton size="sm" type="secondary" @click="cropperZoom(-0.15)" title="缩小">− 缩小</VButton>
-          <VButton size="sm" type="secondary" @click="cropperZoom(0.15)" title="放大">＋ 放大</VButton>
-          <VButton size="sm" type="secondary" @click="cropperMove(-20, 0)" title="左移">← 左移</VButton>
-          <VButton size="sm" type="secondary" @click="cropperMove(20, 0)" title="右移">→ 右移</VButton>
-          <VButton size="sm" type="secondary" @click="cropperMove(0, -20)" title="上移">↑ 上移</VButton>
-          <VButton size="sm" type="secondary" @click="cropperMove(0, 20)" title="下移">↓ 下移</VButton>
-          <VButton size="sm" type="secondary" @click="cropperReset">重置</VButton>
+          <VButton size="sm" type="secondary" @click="cropZoomBy(0.85)" title="缩小">− 缩小</VButton>
+          <VButton size="sm" type="secondary" @click="cropZoomBy(1.18)" title="放大">＋ 放大</VButton>
+          <VButton size="sm" type="secondary" @click="cropMoveBy(-30, 0)" title="左移">← 左移</VButton>
+          <VButton size="sm" type="secondary" @click="cropMoveBy(30, 0)" title="右移">→ 右移</VButton>
+          <VButton size="sm" type="secondary" @click="cropMoveBy(0, -30)" title="上移">↑ 上移</VButton>
+          <VButton size="sm" type="secondary" @click="cropMoveBy(0, 30)" title="下移">↓ 下移</VButton>
+          <VButton size="sm" type="secondary" @click="cropResetView">重置</VButton>
         </div>
         <div class="ae-crop-ops">
           <VButton type="secondary" :disabled="cropUploading" @click="closeCrop">取消</VButton>
