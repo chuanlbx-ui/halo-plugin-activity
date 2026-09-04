@@ -137,36 +137,52 @@ const cropOpen = ref(false)
 const cropImgUrl = ref('')
 const cropBox = ref<HTMLImageElement | null>(null)
 const cropUploading = ref(false)
+const cropReady = ref(false)
 let cropper: Cropper | null = null
+let cropLoaded = false
 
 function openCrop(url: string) {
+  cropLoaded = false
+  cropReady.value = false
   cropImgUrl.value = url
   cropOpen.value = true
-  // 等待图片真正加载完成后再初始化 Cropper（避免初始化过早导致无法裁剪/布局异常）
-  const img = new Image()
-  img.onload = () => {
-    requestAnimationFrame(() => {
-      if (cropBox.value) {
-        if (cropper) cropper.destroy()
-        cropper = new Cropper(cropBox.value, {
-          aspectRatio: 16 / 9,
-          viewMode: 1,
-          autoCropArea: 1,
-          dragMode: 'move',
-          guides: true,
-          center: true,
-          background: false,
-          responsive: true,
-          checkOrientation: true,
-        })
-      }
-    })
-  }
-  img.onerror = () => {
-    Toast.error('图片读取失败，请更换图片')
-    closeCrop()
-  }
-  img.src = url
+}
+
+// 图片自身加载完成即初始化 Cropper（比外部 Image 更可靠，避免大图加载期间无交互）
+function onCropImgLoaded() {
+  if (cropLoaded) return
+  cropLoaded = true
+  cropReady.value = true
+  requestAnimationFrame(() => {
+    if (!cropBox.value) return
+    if (cropper) cropper.destroy()
+    try {
+      cropper = new Cropper(cropBox.value, {
+        aspectRatio: 16 / 9,
+        viewMode: 1,
+        autoCropArea: 1,
+        dragMode: 'move',
+        guides: true,
+        center: true,
+        background: false,
+        responsive: true,
+        checkOrientation: true,
+      })
+    } catch (err) {
+      Toast.error('裁剪初始化失败，请重试或更换图片')
+      closeCrop()
+    }
+  })
+}
+
+function cropperZoom(delta: number) {
+  if (cropper) cropper.zoom(delta)
+}
+function cropperMove(dx: number, dy: number) {
+  if (cropper) cropper.move(dx, dy)
+}
+function cropperReset() {
+  if (cropper) cropper.reset()
 }
 
 function closeCrop() {
@@ -177,6 +193,8 @@ function closeCrop() {
   if (cropImgUrl.value) {
     URL.revokeObjectURL(cropImgUrl.value)
   }
+  cropLoaded = false
+  cropReady.value = false
   cropImgUrl.value = ''
   cropOpen.value = false
 }
@@ -557,13 +575,23 @@ onUnmounted(() => {
     <div v-if="cropOpen" class="ae-crop-mask" @click.self="closeCrop">
       <div class="ae-crop-panel">
         <h3>✂️ 裁剪封面（16:9）</h3>
-        <p class="ae-crop-tip">拖动图片调整位置、滚轮缩放画面，确认后自动生成 16:9 封面并上传。</p>
+        <p class="ae-crop-tip">拖动图片调整位置、滚轮缩放画面；也可用下方按钮微调，确认后自动生成 16:9 封面并上传。</p>
         <div class="ae-crop-stage">
-          <img ref="cropBox" :src="cropImgUrl" alt="封面裁剪预览" />
+          <img v-if="cropImgUrl" ref="cropBox" :src="cropImgUrl" alt="封面裁剪预览" @load="onCropImgLoaded" />
+          <div v-if="!cropReady" class="ae-crop-loading">图片加载中…</div>
+        </div>
+        <div class="ae-crop-tools" v-if="cropReady">
+          <VButton size="sm" type="secondary" @click="cropperZoom(-0.15)" title="缩小">− 缩小</VButton>
+          <VButton size="sm" type="secondary" @click="cropperZoom(0.15)" title="放大">＋ 放大</VButton>
+          <VButton size="sm" type="secondary" @click="cropperMove(-20, 0)" title="左移">← 左移</VButton>
+          <VButton size="sm" type="secondary" @click="cropperMove(20, 0)" title="右移">→ 右移</VButton>
+          <VButton size="sm" type="secondary" @click="cropperMove(0, -20)" title="上移">↑ 上移</VButton>
+          <VButton size="sm" type="secondary" @click="cropperMove(0, 20)" title="下移">↓ 下移</VButton>
+          <VButton size="sm" type="secondary" @click="cropperReset">重置</VButton>
         </div>
         <div class="ae-crop-ops">
           <VButton type="secondary" :disabled="cropUploading" @click="closeCrop">取消</VButton>
-          <VButton type="primary" :loading="cropUploading" @click="confirmCrop">确认裁剪并上传</VButton>
+          <VButton type="primary" :loading="cropUploading" :disabled="!cropReady" @click="confirmCrop">确认裁剪并上传</VButton>
         </div>
       </div>
     </div>

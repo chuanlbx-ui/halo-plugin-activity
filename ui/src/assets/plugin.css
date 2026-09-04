@@ -85,3 +85,7 @@ select.ae-input { padding-right: 8px; appearance: auto; }
 .ae-crop-ops { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
 .ae-crop-panel .cropper-view-box { outline: 1px solid #2563eb; outline-color: rgba(37,99,235,0.8); }
 .ae-crop-panel .cropper-line, .ae-crop-panel .cropper-point { background-color: #2563eb; }
+.ae-crop-loading { position: absolute; color: #cbd5e1; font-size: 13px; }
+.ae-crop-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; flex-shrink: 0; }
+.ae-crop-tools .btn { font-size: 12px; padding: 4px 10px; }
+.ae-crop-stage { position: relative; }
