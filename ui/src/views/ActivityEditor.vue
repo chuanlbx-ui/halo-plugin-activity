@@ -64,15 +64,60 @@ async function uploadAttachment(fileOrUrl: File | string): Promise<Attachment | 
   }
 }
 
+// 归一化图片方向：用 canvas 重绘一次，剥离 EXIF 方向信息，
+// 避免部分海报图带 EXIF 旋转标记导致 Cropper 双重旋转（横图显示成竖屏）
+async function normalizeImageFile(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx || !canvas.width || !canvas.height) {
+        URL.revokeObjectURL(url)
+        resolve(file)
+        return
+      }
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(url)
+      const usePng = file.type === 'image/png'
+      canvas.toBlob(
+        (b) => {
+          if (b) {
+            resolve(new File([b], 'cover-normalized.' + (usePng ? 'png' : 'jpg'), { type: usePng ? 'image/png' : 'image/jpeg' }))
+          } else {
+            resolve(file)
+          }
+        },
+        usePng ? 'image/png' : 'image/jpeg',
+        0.95
+      )
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(file)
+    }
+    img.src = url
+  })
+}
+
 function onPickCover(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
   input.value = ''
-  // 图片文件进入 16:9 在线裁剪；非图片类型回退直接上传
+  // 图片文件：先归一化方向 → 16:9 在线裁剪；非图片类型回退直接上传
   if (file.type && file.type.indexOf('image/') === 0) {
-    const url = URL.createObjectURL(file)
-    openCrop(url)
+    coverUploading.value = true
+    normalizeImageFile(file).then((norm) => {
+      coverUploading.value = false
+      const url = URL.createObjectURL(norm)
+      openCrop(url)
+    })
     return
   }
   coverUploading.value = true
