@@ -97,21 +97,31 @@ let cropper: Cropper | null = null
 function openCrop(url: string) {
   cropImgUrl.value = url
   cropOpen.value = true
-  requestAnimationFrame(() => {
-    if (cropBox.value) {
-      if (cropper) cropper.destroy()
-      cropper = new Cropper(cropBox.value, {
-        aspectRatio: 16 / 9,
-        viewMode: 1,
-        autoCropArea: 1,
-        dragMode: 'move',
-        guides: true,
-        center: true,
-        background: false,
-        responsive: true,
-      })
-    }
-  })
+  // 等待图片真正加载完成后再初始化 Cropper（避免初始化过早导致无法裁剪/布局异常）
+  const img = new Image()
+  img.onload = () => {
+    requestAnimationFrame(() => {
+      if (cropBox.value) {
+        if (cropper) cropper.destroy()
+        cropper = new Cropper(cropBox.value, {
+          aspectRatio: 16 / 9,
+          viewMode: 1,
+          autoCropArea: 1,
+          dragMode: 'move',
+          guides: true,
+          center: true,
+          background: false,
+          responsive: true,
+          checkOrientation: true,
+        })
+      }
+    })
+  }
+  img.onerror = () => {
+    Toast.error('图片读取失败，请更换图片')
+    closeCrop()
+  }
+  img.src = url
 }
 
 function closeCrop() {
