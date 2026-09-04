@@ -11,6 +11,8 @@ import {
 import { RichTextEditor, VueEditor, ExtensionsKit } from '@halo-dev/richtext-editor'
 import { consoleApiClient, type Attachment } from '@halo-dev/api-client'
 import axios from 'axios'
+import Cropper from 'cropperjs'
+import 'cropperjs/dist/cropper.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,6 +68,13 @@ function onPickCover(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  input.value = ''
+  // 图片文件进入 16:9 在线裁剪；非图片类型回退直接上传
+  if (file.type && file.type.indexOf('image/') === 0) {
+    const url = URL.createObjectURL(file)
+    openCrop(url)
+    return
+  }
   coverUploading.value = true
   uploadAttachment(file)
     .then((att) => {
@@ -75,8 +84,73 @@ function onPickCover(e: Event) {
     })
     .finally(() => {
       coverUploading.value = false
-      input.value = ''
     })
+}
+
+// ---------- 封面 16:9 在线裁剪 ----------
+const cropOpen = ref(false)
+const cropImgUrl = ref('')
+const cropBox = ref<HTMLImageElement | null>(null)
+const cropUploading = ref(false)
+let cropper: Cropper | null = null
+
+function openCrop(url: string) {
+  cropImgUrl.value = url
+  cropOpen.value = true
+  requestAnimationFrame(() => {
+    if (cropBox.value) {
+      if (cropper) cropper.destroy()
+      cropper = new Cropper(cropBox.value, {
+        aspectRatio: 16 / 9,
+        viewMode: 1,
+        autoCropArea: 1,
+        dragMode: 'move',
+        guides: true,
+        center: true,
+        background: false,
+        responsive: true,
+      })
+    }
+  })
+}
+
+function closeCrop() {
+  if (cropper) {
+    cropper.destroy()
+    cropper = null
+  }
+  if (cropImgUrl.value) {
+    URL.revokeObjectURL(cropImgUrl.value)
+  }
+  cropImgUrl.value = ''
+  cropOpen.value = false
+}
+
+async function confirmCrop() {
+  if (!cropper) return
+  cropUploading.value = true
+  try {
+    const canvas = cropper.getCroppedCanvas({
+      width: 1600,
+      height: 900,
+      imageSmoothingQuality: 'high',
+    })
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92)
+    )
+    if (!blob) return
+    const file = new File([blob], 'cover-16x9.jpg', { type: 'image/jpeg' })
+    const att = await uploadAttachment(file)
+    if (att) {
+      form.value.cover = att.status?.permalink || ''
+      Toast.success('封面已按 16:9 裁剪并上传')
+    }
+  } catch (err: any) {
+    Toast.error(err?.message || '裁剪上传失败，请重试')
+  } finally {
+    cropUploading.value = false
+    closeCrop()
+  }
 }
 
 function emptyField() {
@@ -241,6 +315,7 @@ onUnmounted(() => {
   } catch (e) {
     // ignore
   }
+  closeCrop()
 })
 </script>
 
@@ -280,9 +355,10 @@ onUnmounted(() => {
                 <div class="ae-cover-btns">
                   <label class="ae-upload-btn">
                     {{ coverUploading ? '上传中…' : '📁 上传图片' }}
-                    <input type="file" accept="image/*" class="hidden" :disabled="coverUploading" @change="onPickCover" />
+                    <input type="file" accept="image/*" class="hidden" :disabled="coverUploading || cropUploading" @change="onPickCover" />
                   </label>
                   <span class="ae-or">或填写图片 URL</span>
+                  <span class="ae-crop-hint">上传后自动进入 <b>16:9</b> 在线裁剪</span>
                 </div>
                 <input v-model="form.cover" class="ae-input" placeholder="https://…" />
               </div>
@@ -420,4 +496,21 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- 封面 16:9 在线裁剪弹窗 -->
+  <Teleport to="body">
+    <div v-if="cropOpen" class="ae-crop-mask" @click.self="closeCrop">
+      <div class="ae-crop-panel">
+        <h3>✂️ 裁剪封面（16:9）</h3>
+        <p class="ae-crop-tip">拖动图片调整位置、滚轮缩放画面，确认后自动生成 16:9 封面并上传。</p>
+        <div class="ae-crop-stage">
+          <img ref="cropBox" :src="cropImgUrl" alt="封面裁剪预览" />
+        </div>
+        <div class="ae-crop-ops">
+          <VButton type="secondary" :disabled="cropUploading" @click="closeCrop">取消</VButton>
+          <VButton type="primary" :loading="cropUploading" @click="confirmCrop">确认裁剪并上传</VButton>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>

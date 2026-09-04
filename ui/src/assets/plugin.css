@@ -71,3 +71,16 @@ select.ae-input { padding-right: 8px; appearance: auto; }
 .ae-add-btn { margin-left: auto; }
 .richtext-wrap .tiptap { min-height: 240px; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; }
 .richtext-wrap .tiptap:focus { outline: none; border-color: #2563eb; }
+
+/* 封面 16:9 在线裁剪弹窗 */
+.ae-crop-hint { font-size: 12px; color: #9ca3af; }
+.ae-crop-hint b { color: #2563eb; }
+.ae-crop-mask { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.ae-crop-panel { width: 100%; max-width: 720px; background: #fff; border-radius: 14px; padding: 20px 22px 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+.ae-crop-panel h3 { margin: 0 0 4px; font-size: 17px; color: #111827; }
+.ae-crop-tip { margin: 0 0 12px; font-size: 12px; color: #6b7280; }
+.ae-crop-stage { width: 100%; background: #0f172a; border-radius: 10px; overflow: hidden; min-height: 240px; display: flex; align-items: center; justify-content: center; }
+.ae-crop-stage img { display: block; max-width: 100%; }
+.ae-crop-ops { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+.ae-crop-panel .cropper-view-box { outline: 1px solid #2563eb; outline-color: rgba(37,99,235,0.8); }
+.ae-crop-panel .cropper-line, .ae-crop-panel .cropper-point { background-color: #2563eb; }
