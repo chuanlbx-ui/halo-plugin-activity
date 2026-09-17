@@ -122,6 +122,28 @@ public class ActivityConsoleEndpoint implements CustomEndpoint {
                     .required(true)
                     .implementation(String.class))
             )
+            .GET("registrations", this::listAllRegistrations, builder -> builder
+                .operationId("ConsoleListAllRegistrations")
+                .description("List registrations of all activities.")
+                .tag(tag)
+                .parameter(parameterBuilder()
+                    .name("page")
+                    .in(ParameterIn.QUERY)
+                    .implementation(Integer.class)
+                    .required(false))
+                .parameter(parameterBuilder()
+                    .name("size")
+                    .in(ParameterIn.QUERY)
+                    .implementation(Integer.class)
+                    .required(false))
+                .parameter(parameterBuilder()
+                    .name("activityName")
+                    .in(ParameterIn.QUERY)
+                    .implementation(String.class)
+                    .required(false))
+                .response(responseBuilder()
+                    .implementation(ListResult.generateGenericClass(ActivityRegistration.class)))
+            )
             .GET("activities/{name}/registrations", this::listRegistrations, builder -> builder
                 .operationId("ConsoleListRegistrations")
                 .description("List registrations of an activity.")
@@ -266,6 +288,20 @@ public class ActivityConsoleEndpoint implements CustomEndpoint {
             .flatMap(client::delete)
             .then(ServerResponse.ok().build())
             .onErrorResume(ActivityException.class, e -> badRequest(e.getMessage()));
+    }
+
+    private Mono<ServerResponse> listAllRegistrations(ServerRequest request) {
+        int page = parsePositiveInt(request.queryParam("page").orElse("1"), 1);
+        int size = parsePositiveInt(request.queryParam("size").orElse("200"), 200);
+        String activityName = request.queryParam("activityName").orElse(null);
+        return listByFilter(ActivityRegistration.class,
+            r -> activityName == null || activityName.isBlank()
+                || activityName.equals(r.getSpec().getActivityName()),
+            Comparator.comparing(r -> r.getSpec().getRegistrationTime() == null
+                ? Instant.EPOCH : r.getSpec().getRegistrationTime(),
+                Comparator.reverseOrder()),
+            page, size)
+            .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> listRegistrations(ServerRequest request) {

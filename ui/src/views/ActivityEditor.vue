@@ -30,6 +30,7 @@ const form = ref({
   status: 'PUBLISHED',
   content: '',
   formFields: [] as any[],
+  coverageLinks: [] as any[],
   metadataVersion: '',
 })
 
@@ -318,6 +319,14 @@ function emptyField() {
   }
 }
 
+function addCoverage() {
+  form.value.coverageLinks.push({ title: '', url: '' })
+}
+
+function removeCoverage(index: number) {
+  form.value.coverageLinks.splice(index, 1)
+}
+
 function addField() {
   form.value.formFields.push(emptyField())
 }
@@ -371,6 +380,7 @@ async function loadActivity(name: string) {
       status: spec.status || 'PUBLISHED',
       content: spec.content || '',
       formFields: Array.isArray(spec.formFields) ? spec.formFields.map((f: any) => ({ ...f })) : [],
+      coverageLinks: Array.isArray(spec.coverageLinks) ? spec.coverageLinks.map((l: any) => ({ ...l })) : [],
       metadataVersion: data.metadata?.version || '',
     }
     if (editor.commands) {
@@ -435,6 +445,9 @@ async function onSubmit() {
           options: f.options?.trim() || undefined,
           placeholder: f.placeholder?.trim() || undefined,
         })),
+        coverageLinks: (form.value.coverageLinks || [])
+          .filter((l: any) => (l.url || '').trim())
+          .map((l: any) => ({ title: (l.title || '').trim(), url: (l.url || '').trim() })),
       },
     }
     if (isEdit.value) {
@@ -576,6 +589,38 @@ onUnmounted(() => {
           <div class="ae-field ae-field-full">
             <div class="richtext-wrap">
               <RichTextEditor :editor="editor" locale="zh-CN" />
+            </div>
+          </div>
+        </section>
+
+        <section class="ae-section">
+          <div class="ae-section-title">
+            <span class="ae-section-icon">📰</span>
+            <div>
+              <h3>活动报道链接</h3>
+              <p>活动结束后把新闻报道（文笔塔文章、媒体稿、公众号文章等）填在这里，会显示在活动详情页下方"活动报道"区块</p>
+            </div>
+            <VButton size="sm" type="secondary" class="ae-add-btn" @click="addCoverage">+ 添加报道</VButton>
+          </div>
+
+          <div v-if="form.coverageLinks.length === 0" class="ae-empty-fields">
+            暂无报道链接。活动结束、报道发出后，点「添加报道」填上标题和链接即可。
+          </div>
+
+          <div v-for="(item, idx) in form.coverageLinks" :key="idx" class="ae-field-card">
+            <div class="ae-field-card-head">
+              <span class="ae-field-card-no">报道 {{ idx + 1 }}</span>
+              <div class="ae-field-card-ops">
+                <button type="button" class="ae-icon-btn ae-icon-btn-danger" @click="removeCoverage(idx)" title="删除">✕ 删除</button>
+              </div>
+            </div>
+            <div class="ae-field ae-field-full">
+              <label class="ae-label ae-label-sm">报道标题</label>
+              <input v-model="item.title" class="ae-input" placeholder="如：把三七磨进咖啡——走访文山馨露商贸" />
+            </div>
+            <div class="ae-field ae-field-full">
+              <label class="ae-label ae-label-sm">链接</label>
+              <input v-model="item.url" class="ae-input" placeholder="https://wenbita.cn/archives/..." />
             </div>
           </div>
         </section>

@@ -74,6 +74,25 @@ public class Activity extends AbstractExtension {
          */
         private List<FormField> formFields;
 
+        /**
+         * 活动相关报道链接（新闻稿、媒体稿、公众号文章等），前台详情页展示。
+         */
+        private List<CoverageLink> coverageLinks;
+
+        @Data
+        public static class CoverageLink {
+
+            /**
+             * 报道标题。
+             */
+            private String title;
+
+            /**
+             * 报道链接。
+             */
+            private String url;
+        }
+
         @Data
         public static class FormField {
 
